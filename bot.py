@@ -7,7 +7,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
 
 TOKEN = "8706553492:AAEYQd68q2qpJejzsmXOz31i5x_OB7GOEcw"
-ADMIN_ID = @Tochka_Otriva_bot
+ADMIN_ID = 6753077789
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -27,9 +27,7 @@ async def start(message: types.Message, state: FSMContext):
         keyboard=[
             [KeyboardButton(text="Акробатика")],
             [KeyboardButton(text="Воздушная гимнастика")],
-            [KeyboardButton(text="ОФП")],
-            [KeyboardButton(text="3-4 года")],
-            [KeyboardButton(text="Для взрослых")]
+            [KeyboardButton(text="ОФП для взрослых")],
         ],
         resize_keyboard=True
     )
