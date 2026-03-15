@@ -61,16 +61,6 @@ async def age(message: types.Message, state: FSMContext):
 
 
 @dp.message(Form.name)
-async def age(message: types.Message, state: FSMContext):
-
-    await state.update_data(age=message.text)
-
-    await message.answer("Введите Ваше имя:")
-
-    await state.set_state(Form.name)
-
-
-@dp.message(Form.name)
 async def name(message: types.Message, state: FSMContext):
 
     await state.update_data(name=message.text)
