@@ -119,8 +119,7 @@ async def phone(message: types.Message, state: FSMContext):
 Имя: {data['name']}
 Телефон: {data['phone']}
 
-ID клиента:
-{user_id}
+ID клиента: {message.from_user.id}
 """
 
     # отправляем админу
