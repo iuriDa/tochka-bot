@@ -1,7 +1,8 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types, F
+import requests
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -20,8 +21,13 @@ class Form(StatesGroup):
     phone = State()
 
 
+# ==============================
+# START
+# ==============================
+
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
+
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Акробатика")],
@@ -30,107 +36,145 @@ async def start(message: types.Message, state: FSMContext):
         ],
         resize_keyboard=True
     )
+
     await message.answer(
         "👋 Добро пожаловать в студию Точка Отрыва!\n\nВыберите направление:",
         reply_markup=keyboard
     )
+
     await state.set_state(Form.direction)
 
 
+# ==============================
+# Направление
+# ==============================
+
 @dp.message(Form.direction)
 async def direction(message: types.Message, state: FSMContext):
+
     await state.update_data(direction=message.text)
+
     await message.answer("Введите возраст:")
+
     await state.set_state(Form.age)
 
 
+# ==============================
+# Возраст
+# ==============================
+
 @dp.message(Form.age)
 async def age(message: types.Message, state: FSMContext):
+
     await state.update_data(age=message.text)
+
     await message.answer("Введите имя:")
+
     await state.set_state(Form.name)
 
 
+# ==============================
+# Имя
+# ==============================
+
 @dp.message(Form.name)
 async def name(message: types.Message, state: FSMContext):
+
     await state.update_data(name=message.text)
+
     phone_keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Отправить телефон", request_contact=True)]
         ],
         resize_keyboard=True
     )
+
     await message.answer(
         "Нажмите кнопку, чтобы отправить телефон:",
         reply_markup=phone_keyboard
     )
+
     await state.set_state(Form.phone)
 
 
+# ==============================
+# Телефон
+# ==============================
+
 @dp.message(Form.phone)
 async def phone(message: types.Message, state: FSMContext):
-    # ✅ Защита: если контакт не был отправлен
-    if not message.contact:
-        await message.answer("Пожалуйста, используйте кнопку для отправки телефона.")
-        return
 
-    phone_number = message.contact.phone_number
-    await state.update_data(phone=phone_number)
+    phone = message.contact.phone_number
+    await state.update_data(phone=phone)
+
     data = await state.get_data()
+
     user_id = message.from_user.id
 
-    # ✅ ID клиента вынесен в отдельную строку с чётким префиксом
-    text = (
-        f"📥 Новая заявка\n\n"
-        f"Направление: {data['direction']}\n"
-        f"Возраст: {data['age']}\n"
-        f"Имя: {data['name']}\n"
-        f"Телефон: {data['phone']}\n\n"
-        f"CLIENT_ID:{user_id}"   # <-- без пробелов, легко парсить
+    text = f"""
+📥 Новая заявка
+
+Направление: {data['direction']}
+Возраст: {data['age']}
+Имя: {data['name']}
+Телефон: {data['phone']}
+
+ID клиента:
+{user_id}
+"""
+
+    # отправляем админу
+    await bot.send_message(
+        ADMIN_ID,
+        text
     )
 
-    await bot.send_message(ADMIN_ID, text)
     await message.answer(
-        "✅ Спасибо! Администратор скоро свяжется с вами.",
-        reply_markup=ReplyKeyboardRemove()
+        "✅ Спасибо!\nАдминистратор скоро свяжется с вами."
     )
+
     await state.clear()
 
 
+# ==============================
+# ОТВЕТ АДМИНА КЛИЕНТУ
+# ==============================
+
 @dp.message()
 async def admin_reply(message: types.Message):
+
+    # проверяем что пишет администратор
     if message.from_user.id != ADMIN_ID:
         return
 
+    # проверяем что это ответ
     if not message.reply_to_message:
         return
 
-    original_text = message.reply_to_message.text
-    if not original_text:
-        return
+    reply_text = message.text
+
+    # ищем ID клиента в сообщении
+    lines = message.reply_to_message.text.split("\n")
 
     user_id = None
 
-    # ✅ Ищем строку с чётким префиксом CLIENT_ID:
-    for line in original_text.split("\n"):
-        line = line.strip()
-        if line.startswith("CLIENT_ID:"):
-            try:
-                user_id = int(line.split(":")[1])
-            except (IndexError, ValueError):
-                pass
-            break
+    for line in lines:
+        if "ID клиента" in line:
+            continue
+        if line.strip().isdigit():
+            user_id = int(line.strip())
 
-    if not user_id:
-        await message.reply("❌ Не удалось найти ID клиента в заявке")
-        return
+    if user_id:
 
-    await bot.send_message(
-        user_id,
-        f"📩 Ответ от администратора:\n\n{message.text}"
-    )
-    await message.reply("✅ Сообщение отправлено клиенту")
+        await bot.send_message(
+            user_id,
+            f"📩 Сообщение от администратора:\n\n{reply_text}"
+        )
 
+
+# ==============================
+# запуск
+# ==============================
 
 async def main():
     await dp.start_polling(bot)
