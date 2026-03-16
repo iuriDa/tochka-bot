@@ -168,7 +168,7 @@ ID: {message.from_user.id}
     # Отправка данных в Google таблицу
     # ==============================
 
-    if GOOGLE_SCRIPT_URL != "":
+    if GOOGLE_SCRIPT_URL != "https://script.google.com/macros/s/AKfycbyAAmsViWvAbKeC8IhHWSv4fPrbIQXI8ENmUJo7M5gwSk5y5-s82YiOZ0LOTFEhUIcL/exec":
 
         payload = {
             "direction": data['direction'],
