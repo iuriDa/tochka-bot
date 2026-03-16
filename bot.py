@@ -143,34 +143,38 @@ ID клиента:
 @dp.message()
 async def admin_reply(message: types.Message):
 
-    # проверяем что пишет администратор
+    # если пишет не администратор — игнорируем
     if message.from_user.id != ADMIN_ID:
         return
 
-    # проверяем что это ответ
+    # сообщение должно быть ответом
     if not message.reply_to_message:
         return
 
-    reply_text = message.text
+    original_text = message.reply_to_message.text
 
-    # ищем ID клиента в сообщении
-    lines = message.reply_to_message.text.split("\n")
+    if not original_text:
+        return
 
     user_id = None
 
-    for line in lines:
-        if "ID клиента" in line:
-            continue
+    # ищем ID клиента
+    for line in original_text.split("\n"):
         if line.strip().isdigit():
             user_id = int(line.strip())
+            break
 
-    if user_id:
+    if not user_id:
+        await message.reply("❌ Не найден ID клиента")
+        return
 
-        await bot.send_message(
-            user_id,
-            f"📩 Сообщение от администратора:\n\n{reply_text}"
-        )
+    # отправляем ответ клиенту
+    await bot.send_message(
+        user_id,
+        f"📩 Ответ администратора:\n\n{message.text}"
+    )
 
+    await message.reply("✅ Сообщение отправлено клиенту")
 
 # ==============================
 # запуск
