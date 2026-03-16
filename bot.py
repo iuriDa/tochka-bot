@@ -1,4 +1,5 @@
 import asyncio
+import requests
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
@@ -8,6 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 TOKEN = "8706553492:AAEYQd68q2qpJejzsmXOz31i5x_OB7GOEcw"
 ADMIN_ID = 6753077789
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAAmsViWvAbKeC8IhHWSv4fPrbIQXI8ENmUJo7M5gwSk5y5-s82YiOZ0LOTFEhUIcL/exec"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -96,6 +98,18 @@ async def phone(message: types.Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
     await state.clear()
+    payload = {
+    "direction": data['direction'],
+    "age": data['age'],
+    "name": data['name'],
+    "phone": data['phone'],
+    "telegram_id": user_id
+}
+
+try:
+    requests.post(GOOGLE_SCRIPT_URL, json=payload)
+except:
+    print("Ошибка отправки в Google Sheets")
 
 
 @dp.message()
